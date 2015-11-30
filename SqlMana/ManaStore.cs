@@ -5,7 +5,7 @@
         //-----------------------
         //Begin: Clauses for SSP Extraction
         //-----------------------
-        public static string Steal =
+        public static string StealBase =
         @"SELECT 
             ROUTINE_NAME
             , OBJECT_DEFINITION(OBJECT_ID(ROUTINE_NAME)) as ROUTINE_DEFINITION 
@@ -17,18 +17,21 @@
 		WHERE 
 			O.name IS NOT NULL 
 			AND ISNULL(O.is_ms_shipped,0) = 0
-            AND ISNULL(E.name, '') <> 'microsoft_database_tools_support'
-			AND O.type_desc = 'SQL_STORED_PROCEDURE'";
+            AND ISNULL(E.name, '') <> 'microsoft_database_tools_support'";
 
-        public static string StealWhere =
-        @"{0} AND ROUTINE_NAME in ({1})";
+        public static string StealObjType = @"{0} AND O.type_desc = '{1}'";
+        public static string StealWhere = @"{0} AND ROUTINE_NAME in ({1})";
+        public static string Steal = string.Format(StealObjType,StealBase, "SQL_STORED_PROCEDURE");
+        public static string StealFNScalar = string.Format(StealObjType, StealBase, "SQL_SCALAR_FUNCTION");
+        public static string StealFNTable = string.Format(StealObjType, StealBase, "SQL_TABLE_VALUED_FUNCTION");
+        
         //-----------------------
         //End  : Clauses for SSP Extraction
         //-----------------------
 
 
         //-----------------------
-        //Begin: Clauses for SSP Restore (from file)
+        //Begin: Clauses for SSP Drop/ Restore (from file)
         //-----------------------
         public static string Poison =
         @"IF EXISTS ( 
