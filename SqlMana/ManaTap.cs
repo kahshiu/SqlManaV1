@@ -164,6 +164,10 @@ namespace SqlMana
                     ManaStore.Healing
                     , tempSSP.sspDef
                     ));
+                sqlString.Add(string.Format(
+                    ManaStore.LevelUp
+                    , tempSSP.sspName
+                    ));
             }
             else
             {
@@ -255,12 +259,16 @@ namespace SqlMana
                     {
                         using (SqlCommand cmd = new SqlCommand(SQLStore[0], connection))
                         using (SqlCommand cmd2 = new SqlCommand(SQLStore[1], connection))
+                        using (SqlCommand cmd3 = new SqlCommand(SQLStore[2], connection))
                         {
                             cmd.ExecuteNonQuery();
                             c.Log.AppendLog("[SQL updateSSP] Dropped SSP: " + c.Database + "." + temp.sspName);
 
                             cmd2.ExecuteNonQuery();
                             c.Log.AppendLog("[SQL updateSSP] Updated SSP: " + c.Database + "." + temp.sspName);
+
+                            cmd3.ExecuteNonQuery();
+                            c.Log.AppendLog("[SQL updateSSP] Marked SSP (sp_recompile): " + c.Database + "." + temp.sspName);
 
                             rowsAffected = rowsAffected + 1;
                         }

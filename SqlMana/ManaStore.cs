@@ -24,6 +24,7 @@
         public static string Steal = string.Format(StealObjType,StealBase, "SQL_STORED_PROCEDURE");
         public static string StealFNScalar = string.Format(StealObjType, StealBase, "SQL_SCALAR_FUNCTION");
         public static string StealFNTable = string.Format(StealObjType, StealBase, "SQL_TABLE_VALUED_FUNCTION");
+        public static string LevelUp = @"EXEC sp_recompile N'{0}'";
         
         //-----------------------
         //End  : Clauses for SSP Extraction
