@@ -7,8 +7,10 @@ namespace SqlMana
     {
         private static Config config;
 
-        static void Main(string[] args)
+        static int Main(string[] args)
         {
+            int status = 1;
+
             // Begin: Singletons across Runtime
             config = new Config();
             new Logger(config);
@@ -19,45 +21,47 @@ namespace SqlMana
             if (args.Length <= 0)
             {
                 Console.WriteLine("[Main] Undefined input parameters");
-                return;
+                return -1;
             }
 
             // eliminate case sensitivity
             string progType = args[0].ToLower();
             if (progType == "file" || progType == "files")
             {
-                ProgPrettify(ProgConfigFiles, args);
+                status = ProgPrettify(ProgConfigFiles, args);
             }
             else if (progType == "data")
             {
-                ProgConfigData(args);
+                status = ProgConfigData(args);
             }
             else
             {
+                status = -1;
                 Console.WriteLine("[Main] Unsupported program type");
-                return;
             }
-
-            //TODO
-            //ignore 
+            return status;
         }
 
-        private static void ProgPrettify(Func<string [],int> theProg, string[] args)
+        private static int ProgPrettify(Func<string[], int> theProg, string[] args)
         {
+            int status = 1;
             //begin process
             Console.WriteLine("[Main] ------------------ Begin process ------------------");
             //exe process
             if (theProg(args) < 0)
             {
-                return;
+                return -1;
             }
             //post process
             Console.WriteLine("");
             Console.WriteLine("[Main] ------------------ End process ------------------");
-            Console.WriteLine("[Exit] L key: Explore logs & exit");
-            Console.WriteLine("[Exit] Any key: Exit");
-            string option = Console.ReadLine();
-            if (option == "L" || option == "l") ProgPost();
+
+            //Console.WriteLine("[Exit] L key: Explore logs & exit");
+            //Console.WriteLine("[Exit] Any key: Exit");
+            //string option = Console.ReadLine();
+            //if (option == "L" || option == "l") ProgPost();
+
+            return status;
         }
 
         private static int ProgConfigData(string[] args)

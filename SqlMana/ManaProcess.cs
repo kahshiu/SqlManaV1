@@ -30,6 +30,9 @@ namespace SqlMana
                     temp = process.StandardOutput.ReadLine();
                 }
             }
+            process.WaitForExit();
+            process.Close();
+
             return output;
         }
     }
