@@ -12,6 +12,7 @@ namespace SqlMana
         private SqlDataReader reader;
         private DataTable dt;
         private int rowsAffected;
+        private int countSSP;
 
         public ManaTap(Config origC)
         {
@@ -238,6 +239,7 @@ namespace SqlMana
 
                 //reset variables
                 SSP.currIndex = 0;
+                countSSP = 0;
                 rowsAffected = 0;
                 SSP temp;
 
@@ -257,15 +259,27 @@ namespace SqlMana
 
                     try
                     {
+                        string warningMsg = "";
+
                         using (SqlCommand cmd = new SqlCommand(SQLStore[0], connection))
-                        using (SqlCommand cmd2 = new SqlCommand(SQLStore[1], connection))
+                        using (SqlCommand cmd2 = new SqlCommand())
                         using (SqlCommand cmd3 = new SqlCommand(SQLStore[2], connection))
                         {
-                            cmd.ExecuteNonQuery();
-                            c.Log.AppendLog("[SQL updateSSP] Dropped SSP: " + c.Database + "." + temp.sspName);
+                            // checking existance of SSP
+                            countSSP = (int)cmd.ExecuteScalar();
+                            warningMsg = countSSP == 0 ?
+                                "[SQL updateSSP] New SSP: " :
+                                "[SQL updateSSP] Detected existing SSP: ";
+                            c.Log.AppendLog(warningMsg + c.Database + "." + temp.sspName);
 
+                            // decide create/ alter SSP
+                            cmd2.CommandText = ManaStore.Swap(SQLStore[1], countSSP > 0);
+                            cmd2.Connection = connection;
                             cmd2.ExecuteNonQuery();
-                            c.Log.AppendLog("[SQL updateSSP] Updated SSP: " + c.Database + "." + temp.sspName);
+                            warningMsg = countSSP == 0 ?
+                                "[SQL updateSSP] Created SSP: " :
+                                "[SQL updateSSP] Updated SSP: ";
+                            c.Log.AppendLog(warningMsg + c.Database + "." + temp.sspName);
 
                             cmd3.ExecuteNonQuery();
                             c.Log.AppendLog("[SQL updateSSP] Marked SSP (sp_recompile): " + c.Database + "." + temp.sspName);

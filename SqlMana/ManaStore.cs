@@ -1,4 +1,5 @@
-﻿namespace SqlMana
+﻿using System.Text.RegularExpressions;
+namespace SqlMana
 {
     class ManaStore
     {
@@ -21,11 +22,11 @@
 
         public static string StealObjType = @"{0} AND O.type_desc = '{1}'";
         public static string StealWhere = @"{0} AND ROUTINE_NAME in ({1})";
-        public static string Steal = string.Format(StealObjType,StealBase, "SQL_STORED_PROCEDURE");
+        public static string Steal = string.Format(StealObjType, StealBase, "SQL_STORED_PROCEDURE");
         public static string StealFNScalar = string.Format(StealObjType, StealBase, "SQL_SCALAR_FUNCTION");
         public static string StealFNTable = string.Format(StealObjType, StealBase, "SQL_TABLE_VALUED_FUNCTION");
         public static string LevelUp = @"EXEC sp_recompile N'{0}'";
-        
+
         //-----------------------
         //End  : Clauses for SSP Extraction
         //-----------------------
@@ -35,16 +36,23 @@
         //Begin: Clauses for SSP Drop/ Restore (from file)
         //-----------------------
         public static string Poison =
-        @"IF EXISTS ( 
-            SELECT *
+        @"SELECT COUNT(*)
             FROM sys.objects
             WHERE object_id = OBJECT_ID(N'{0}')
-            AND type IN ( N'P', N'PC' ) 
-        ) 
-        drop procedure {0}";
+            AND type IN ( N'P', N'PC' )";
 
         public static string Healing =
         @"{0}";
+
+        public static string Swap(string SSPContent, bool Activate)
+        {
+            string temp = SSPContent;
+            if(Activate)
+            {
+                temp = new Regex("CREATE PROCEDURE").Replace(temp,"ALTER PROCEDURE",1);
+            }
+            return temp;
+        }
         //-----------------------
         //End  : Clauses for SSP Restore (from file)
         //-----------------------

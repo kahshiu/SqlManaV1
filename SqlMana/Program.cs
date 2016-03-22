@@ -39,6 +39,7 @@ namespace SqlMana
                 status = -1;
                 Console.WriteLine("[Main] Unsupported program type");
             }
+            Environment.Exit(status);
             return status;
         }
 
