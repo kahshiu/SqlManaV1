@@ -9,28 +9,35 @@ namespace SqlMana
 {
     public class ManaProcess
     {
-        public static List<string> runExe(string exePath, string arguments, Boolean hasOutput)
+        public static int returnCode = 0;
+        public static List<string> output = new List<string>();
+
+        public static List<string> runExe(string exePath, string arguments, bool silent = false)
         {
             ProcessStartInfo startInfo = new ProcessStartInfo();
             startInfo.FileName = exePath;
             startInfo.Arguments = arguments;
-            startInfo.RedirectStandardOutput = hasOutput;
+            startInfo.UseShellExecute = false;
+            startInfo.RedirectStandardOutput = true;
 
             Process process = new Process();
             process.StartInfo = startInfo;
+            if(silent)
+            {
+                process.StartInfo.CreateNoWindow = true;
+                process.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
+            }
             process.Start();
 
-            List<string> output = new List<string>();
-            if (hasOutput)
+            string temp = process.StandardOutput.ReadLine();
+            while (temp != null)
             {
-                string temp = process.StandardOutput.ReadLine();
-                while (temp != null)
-                {
-                    output.Add(temp);
-                    temp = process.StandardOutput.ReadLine();
-                }
+                output.Add(temp);
+                temp = process.StandardOutput.ReadLine();
             }
+            
             process.WaitForExit();
+            returnCode = process.ExitCode;
             process.Close();
 
             return output;

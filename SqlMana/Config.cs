@@ -241,6 +241,10 @@ namespace SqlMana
             get { return progDBAction; }
             set { progDBAction = value; }
         }
+        public string ObjType
+        {
+            get { return DBAction.Substring(Math.Max(0, DBAction.Length - 3)); }
+        }
         public string FileAction
         {
             get { return progFileAction; }

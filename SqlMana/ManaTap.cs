@@ -134,10 +134,15 @@ namespace SqlMana
         {
             List<string> sqlString = new List<string>();
 
-            if (c.DBAction == "selectSSP")
+            // forming the where clause 
+            string temp = "";
+            if (c.DBAction == "selectSSP" || c.DBAction == "selectFNS" || c.DBAction == "selectFNT")
             {
-                string temp = "";
-                temp = ManaStore.Steal;
+                // forming the where clause
+                if (c.DBAction == "selectFNT") temp = ManaStore.StealFNTable;
+                else if (c.DBAction == "selectFNS") temp = ManaStore.StealFNScalar;
+                else temp = ManaStore.Steal;
+
                 if (c.SQLWhere.Length > 0)
                 {
                     string targetSSPString = "";
@@ -149,17 +154,24 @@ namespace SqlMana
                 }
                 sqlString.Add(temp);
             }
-            else if (c.DBAction == "updateSSP")
+            else if (c.DBAction == "updateSSP" || c.DBAction == "updateFNT" || c.DBAction == "updateFNS")
             {
                 if (SSP.currIndex >= c.Filr.sspCache.Count)
                 {
                     c.Log.AppendLog("[SQL string] exceeded index");
                     return sqlString;
                 }
+
+                // forming the where clause
+                if (c.DBAction == "updateFNT") temp = ManaStore.PoisonFNT;
+                else if (c.DBAction == "updateFNS") temp = ManaStore.PoisonFNS;
+                else temp = ManaStore.PoisonSSP;
+
                 SSP tempSSP = c.Filr.sspCache[SSP.currIndex];
                 sqlString.Add(string.Format(
                     ManaStore.Poison
                     , tempSSP.sspName
+                    , temp
                     ));
                 sqlString.Add(string.Format(
                     ManaStore.Healing
@@ -182,39 +194,42 @@ namespace SqlMana
         {
             int status = 1;
             List<string> SQLStore;
+            List<string> tempDisplay = new List<string>();
+            string logHead = string.Format("[SQL {0}]", c.DBAction);
+            string objType = c.ObjType;
 
-            if (c.DBAction == "selectSSP")
+            if (c.DBAction == "selectSSP" || c.DBAction == "selectFNS" || c.DBAction == "selectFNT")
             {
                 rowsAffected = 0;
                 SQLStore = BuildSQLString();
                 // only 1 SQL in SSP selection
                 if (SQLStore[0].Length == 0)
                 {
-                    c.Log.AppendLog("[SQL selectSSP] Undefined SQL string");
+                    c.Log.AppendLog(string.Format("{0} Undefined SQL string", logHead));
                     return 0;
                 }
                 try
                 {
                     using (SqlCommand cmd = new SqlCommand(SQLStore[0], connection))
                     {
-                        c.Log.AppendLog("[SQL selectSSP] Read start: " + SQLStore[0]);
+                        c.Log.AppendLog(string.Format("{0} Read start: {1}", logHead, SQLStore[0]));
                         reader = cmd.ExecuteReader();
-                        c.Log.AppendLog("[SQL selectSSP] Read end");
+                        c.Log.AppendLog(string.Format("{0} Read end", logHead));
 
                         dt.Load(reader);
 
                         rowsAffected = rowsAffected + dt.Rows.Count;
-                        c.Log.AppendLog(string.Format("[SQL selectSSP] Loaded datastore: {0} rows", dt.Rows.Count));
+                        c.Log.AppendLog(string.Format("{0} Loaded datastore: {1} rows", logHead, dt.Rows.Count));
                     }
                 }
                 catch (Exception e)
                 {
-                    c.Log.AppendLog("[SQL selectSSP] Read error: " + SQLStore[0]);
+                    c.Log.AppendLog(string.Format("{0} Read error: {1}", logHead, SQLStore[0]));
                     c.Log.AppendLog(e.ToString());
                     status = -1;
                 }
 
-                //storing into cache
+                //storing into cache, SSP + FNs
                 foreach (DataRow row in dt.Rows)
                 {
                     //write to physical file
@@ -229,11 +244,11 @@ namespace SqlMana
                 //Extract portions for custom sql
                 //remember to clear cache when soft/hard reset
             }
-            else if (c.DBAction == "updateSSP")
+            else if (c.DBAction == "updateSSP" || c.DBAction == "updateFNS" || c.DBAction == "updateFNT")
             {
                 if (c.Filr.sspCache.Count <= 0)
                 {
-                    c.Log.AppendLog("[SQL updateSSP] Undefined SSP cache, Exit");
+                    c.Log.AppendLog(string.Format("{0} Undefined SSP cache, Exit", logHead));
                     return 0;
                 }
 
@@ -244,7 +259,7 @@ namespace SqlMana
                 SSP temp;
 
                 //start looping cache
-                c.Log.AppendLog("[SQL updateSSP] Initiating SSP update procedure");
+                c.Log.AppendLog(string.Format("{0} Initiating SSP update procedure", logHead));
                 for (int i = 0; i < c.Filr.sspCache.Count; i++)
                 {
                     SSP.currIndex = i;
@@ -253,43 +268,58 @@ namespace SqlMana
 
                     if (SQLStore[1].Length == 0)
                     {
-                        c.Log.AppendLog("[SQL updateSSP] Undefined SSP content: " + temp.sspName);
+                        c.Log.AppendLog(string.Format("{0} Undefined SSP content: {1}", logHead, temp.sspName));
                         continue;
                     }
 
+                    tempDisplay.Add(string.Format("New {0}:", objType));
+                    tempDisplay.Add(string.Format("Detected existing {0}:", objType));
+                    tempDisplay.Add(string.Format("Created {0}:", objType));
+                    tempDisplay.Add(string.Format("Updated {0}:", objType));
+
                     try
                     {
-                        string warningMsg = "";
-
                         using (SqlCommand cmd = new SqlCommand(SQLStore[0], connection))
                         using (SqlCommand cmd2 = new SqlCommand())
                         using (SqlCommand cmd3 = new SqlCommand(SQLStore[2], connection))
                         {
                             // checking existance of SSP
                             countSSP = (int)cmd.ExecuteScalar();
-                            warningMsg = countSSP == 0 ?
-                                "[SQL updateSSP] New SSP: " :
-                                "[SQL updateSSP] Detected existing SSP: ";
-                            c.Log.AppendLog(warningMsg + c.Database + "." + temp.sspName);
+                            c.Log.AppendLog(string.Format("{0} {1} {2}.{3}"
+                                , logHead
+                                , (countSSP == 0 ? tempDisplay[0] : tempDisplay[1])
+                                , c.Database
+                                , temp.sspName)
+                            );
 
                             // decide create/ alter SSP
-                            cmd2.CommandText = ManaStore.Swap(SQLStore[1], countSSP > 0);
+                            cmd2.CommandText = ManaStore.Swap(
+                                SQLStore[1]
+                                , countSSP > 0
+                                , objType == "SSP" ? "PROCEDURE" : "FUNCTION"
+                            );
                             cmd2.Connection = connection;
                             cmd2.ExecuteNonQuery();
-                            warningMsg = countSSP == 0 ?
-                                "[SQL updateSSP] Created SSP: " :
-                                "[SQL updateSSP] Updated SSP: ";
-                            c.Log.AppendLog(warningMsg + c.Database + "." + temp.sspName);
+                            c.Log.AppendLog(string.Format("{0} {1} {2}.{3}"
+                               , logHead
+                               , (countSSP == 0 ? tempDisplay[2] : tempDisplay[3])
+                               , c.Database
+                               , temp.sspName)
+                            );
 
                             cmd3.ExecuteNonQuery();
-                            c.Log.AppendLog("[SQL updateSSP] Marked SSP (sp_recompile): " + c.Database + "." + temp.sspName);
-
+                            c.Log.AppendLog(string.Format("{0} Marked {1} (sp_recompile): {2}.{3}"
+                                , logHead
+                                , objType
+                                , c.Database
+                                , temp.sspName)
+                            );
                             rowsAffected = rowsAffected + 1;
                         }
                     }
                     catch (Exception e)
                     {
-                        c.Log.AppendLog(string.Format(@"[SQL updateSSP] Error: SSP {{{0}}}", temp.sspName));
+                        c.Log.AppendLog(string.Format(@"{0} Error: {1} {{{2}}}", logHead, objType, temp.sspName));
                         c.Log.AppendLog(e.ToString());
 
                         if (status > 0) status = -1;
@@ -297,12 +327,12 @@ namespace SqlMana
 
                     }
                 }
-                c.Log.AppendLog(string.Format("[SQL updateSSP] Updated {0} procedures", rowsAffected));
+                c.Log.AppendLog(string.Format("{0} Updated {1} entries of {2}", logHead, rowsAffected, objType));
             }
             //TODO: Addon/ enable other SQL statements
             else
             {
-                c.Log.AppendLog(string.Format("[SQL] No Action"));
+                c.Log.AppendLog(string.Format("{0} No Action", logHead));
             }
             return status;
         }

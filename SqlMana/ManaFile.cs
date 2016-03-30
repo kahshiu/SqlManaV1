@@ -31,7 +31,7 @@ namespace SqlMana
             }
             else
             {
-                temp = string.Format(@"{0}\{1}", c.ExePath, "SSP");
+                temp = string.Format(@"{0}\{1}", c.ExePath, c.ObjType);
             }
             return temp;
         }
@@ -96,7 +96,7 @@ namespace SqlMana
         public int DoFileAction()
         {
             int status = 1;
-            if (c.FileAction == "writeSSP")
+            if (c.FileAction == "writeSSP" || c.FileAction == "writeFNS" || c.FileAction == "writeFNT")
             {
                 DataTable temp = c.Tapper.GetDataTable();
                 string sspFilePath = "";
@@ -104,13 +104,13 @@ namespace SqlMana
 
                 if (c.Tapper.GetRowsAffected() <= 0)
                 {
-                    c.Log.AppendLog("[Filr] No SSP to write");
+                    c.Log.AppendLog(string.Format("[Filr] No {0} to write", c.ObjType));
                     return 0;
                 }
 
                 int counter = 1;
                 BuildDirectory();
-                c.Log.AppendLog("[Filr] Initiating SSP writing: " + GetSourceDirectory());
+                c.Log.AppendLog(string.Format("[Filr] Initiating {0} writing: {1}", c.ObjType, GetSourceDirectory()));
 
                 for (int i = 0; i < sspCache.Count; i++)
                 {
@@ -144,9 +144,9 @@ namespace SqlMana
                 //    counter = counter + 1;
                 //}
 
-                c.Log.AppendLog("[Filr] Done SSP writing: " + GetSourceDirectory() + " files");
+                c.Log.AppendLog(string.Format("[Filr] Done {0} writing: {1} files", c.ObjType, GetSourceDirectory()));
             }
-            else if (c.FileAction == "readSSP")
+            else if (c.FileAction == "readSSP" || c.FileAction == "readFNS" || c.FileAction == "readFNT")
             {
                 string diffFile;
                 string filePath;
@@ -155,13 +155,13 @@ namespace SqlMana
                 // read straight from string 
                 if (c.InPath.Length <= 0)
                 {
-                    c.Log.AppendLog("[Filr] Undefined InPath (file with SSP to read)");
+                    c.Log.AppendLog(string.Format("[Filr] Undefined InPath (file with {0} to read)", c.ObjType));
                     if (c.InData == "")
                     {
                         c.Log.AppendLog("[Filr] InData NOT exists");
                         return -1;
                     }
-                    c.Log.AppendLog("[Filr] InData exists proceed to reading SSP");
+                    c.Log.AppendLog(string.Format("[Filr] InData exists proceed to reading {0}", c.ObjType));
                     foreach (string targetSSP in c.InData.Split(','))
                     {
                         diffFile = targetSSP.Trim();
@@ -197,7 +197,7 @@ namespace SqlMana
                 // read sproc from file
                 else
                 {
-                    c.Log.AppendLog("[Filr] Initiating SSP reading: " + GetSourceDirectory());
+                    c.Log.AppendLog(string.Format("[Filr] Initiating {0} reading: {1}", c.ObjType, GetSourceDirectory()));
                     try
                     {
                         if (!File.Exists(c.InPath))
@@ -243,10 +243,10 @@ namespace SqlMana
                         c.Log.AppendLog(e.ToString());
                         status = -1;
                     }
-                    c.Log.AppendLog("[Filr] Done SSP reading: " + counter + " files");
+                    c.Log.AppendLog(string.Format("[Filr] Done {0} reading: {1} files", c.ObjType, counter));
                 }
             }
-            else if (c.FileAction == "compareSSP")
+            else if (c.FileAction == "compareSSP" || c.FileAction == "compareNS" || c.FileAction == "compareFNT")
             {
                 if (c.RepoPath.Length <= 0 || c.Repo2Path.Length <= 0)
                 {
@@ -261,7 +261,8 @@ namespace SqlMana
                 string temp = "";
 
                 c.Log.AppendLog(string.Format(
-                    @"[Filr] Initiating SSP comparison: {0} (Base) {1} (Target)"
+                    @"[Filr] Initiating {0} comparison: {1} (Base) {2} (Target)"
+                    , c.ObjType                    
                     , c.RepoPath
                     , c.Repo2Path));
 
@@ -307,8 +308,8 @@ namespace SqlMana
                     c.Log.AppendLog(entry);
                     //Console.WriteLine(entry);
                 }
-                if (missings.Count > 0) c.Log.AppendLog(string.Format("[Filr] Total of {0} extra SSP in source", missings.Count));
-                if (messages.Count > 0) c.Log.AppendLog(string.Format("[Filr] Total of {0} diff SSP in source", messages.Count));
+                if (missings.Count > 0) c.Log.AppendLog(string.Format("[Filr] Total of {0} extra {1} in source", missings.Count, c.ObjType));
+                if (messages.Count > 0) c.Log.AppendLog(string.Format("[Filr] Total of {0} diff {1} in source", messages.Count, c.ObjType));
 
 
                 if (c.OutPath.Length > 0)
